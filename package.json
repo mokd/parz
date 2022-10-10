@@ -4,7 +4,8 @@
   "description": "A simple utility for parsing and validation of values.",
   "main": "parz.ts",
   "scripts": {
-    "test": "jest --watch"
+    "test:watch": "jest --watch",
+    "test": "jest"
   },
   "author": "mokd",
   "license": "MIT",
