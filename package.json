@@ -1,0 +1,15 @@
+{
+  "name": "@mokd/parz",
+  "version": "0.0.2",
+  "description": "A simple utility for parsing and validation of values.",
+  "main": "parz.ts",
+  "scripts": {
+    "test": "jest --watch"
+  },
+  "author": "mokd",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.1.2",
+    "ts-jest": "^29.0.3"
+  }
+}
