@@ -1,6 +1,6 @@
 {
   "name": "@mokd/parz",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A simple utility for parsing and validation of values.",
   "homepage": "https://github.com/mokd/parz",
   "main": "parz.js",
