@@ -7,7 +7,7 @@
   "scripts": {
     "test:watch": "jest --watch",
     "test": "jest",
-    "publish": "tsc && npm publish"
+    "pub": "tsc && npm publish"
   },
   "author": "mokd",
   "license": "MIT",
