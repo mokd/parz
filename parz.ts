@@ -125,18 +125,22 @@ class Parz<A, B, C> {
         return new Parz<A, C, T1>(this.original, invalidParse([]), [])
     }
 
-    value() : ResultOfValdiationOrParse<A, C> {
+    value() : ParzRes<A, C> {
         if ((isParseValid(this.output) || isValidationValid(this.output)) && this.errors.length === 0) {
             return {
                 original : this.original,
                 target : this.output.target,
-                type : ResultOfValdiationOrParseType.SUCCESS
+                type : ResultOfValdiationOrParseType.SUCCESS,
+                isJust : () => true,
+                isError : () => false
             }
         } else {
             return {
                 original : this.original,
                 errors : this.errors,
-                type : ResultOfValdiationOrParseType.FAIL
+                type : ResultOfValdiationOrParseType.FAIL,
+                isJust : () => false,
+                isError : () => true 
             }
         }
     }
@@ -147,24 +151,28 @@ enum ResultOfValdiationOrParseType {
     FAIL = "FAIL",
 }
 
-export type ValidationOrParseFail<O> = {
+export type ParzError<O> = {
     original : O,
     errors : string[]
     type: ResultOfValdiationOrParseType.FAIL
+    isJust: () => false
+    isError: () => true
 }
-export type ValidationOrParseSuccess<O, P> = {
+export type ParzJust<O, P> = {
     original: O,
     target: P,
     type: ResultOfValdiationOrParseType.SUCCESS
+    isJust: () => true
+    isError: () => false
 }
 
-type ResultOfValdiationOrParse<O,P> = ValidationOrParseFail<O> | ValidationOrParseSuccess<O,P>
+export type ParzRes<O,P> = ParzError<O> | ParzJust<O,P>
 
-export const isSuccess = <O,P>(res : ResultOfValdiationOrParse<O,P>): res is ValidationOrParseSuccess<O,P> => {
+export const isJust = <O,P>(res : ParzRes<O,P>): res is ParzJust<O,P> => {
     return res.type === ResultOfValdiationOrParseType.SUCCESS
 }
 
-export const isFail = <O,P>(res : ResultOfValdiationOrParse<O,P>): res is ValidationOrParseFail<O> => {
+export const isError = <O,P>(res : ParzRes<O,P>): res is ParzError<O> => {
     return res.type === ResultOfValdiationOrParseType.FAIL
 }
 

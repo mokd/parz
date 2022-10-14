@@ -1,5 +1,5 @@
 import {describe, expect, test} from '@jest/globals';
-import { createParser, createValidator, isFail, isSuccess, startWith, ValidationOrParseFail, ValidationOrParseSuccess } from './parz';
+import { createParser, createValidator, isJust, startWith, ParzJust, ParzError } from './parz';
 
 describe('Test validation', () => {
 
@@ -9,23 +9,21 @@ describe('Test validation', () => {
     )
 
     test("Simple validation success", () => {
-        const res = startWith<string>("12345")
+        const res = startWith("12345")
             .then(stringOfLength5)
             .value()
 
-        const validationResult = isFail(res)
-        expect(validationResult).toBe(false)
+        expect(res.isJust()).toBe(true)
     })
 
     test("Simple validation fail", () => {
-        const res = startWith<string>("1")
+        const res = startWith("1")
             .then(stringOfLength5)
             .value()
 
-        const checked = isFail(res)
-        expect(checked).toBe(true)
+        expect(res.isJust()).toBe(false)
 
-        const value = res as unknown as ValidationOrParseFail<string>
+        const value = res as unknown as ParzError<string>
 
         expect(value.errors).toStrictEqual([`String is not length 5, it is actually of length 1`])
     })
@@ -58,10 +56,10 @@ describe("Test multiple failed validations", () => {
         )
 
     test("Two failed validations should result in two errors", () => {
-        const res = startWith<string>("1")
+        const res = startWith("1")
         .then(stringOfLength5)
         .then(stringOfLength5)
-        .value() as unknown as ValidationOrParseFail<string>
+        .value() as unknown as ParzError<string>
 
         expect(res.errors.length).toBe(2)
         expect(res.errors).toStrictEqual([`String is not length 5, it is actually of length 1`, `String is not length 5, it is actually of length 1`])
@@ -72,18 +70,18 @@ describe("Test multiple failed validations", () => {
         .then(stringOfLength5)
         .then(stringOfLength5)
         .then(stringOfLength1)
-        .value() as unknown as ValidationOrParseFail<string>
+        .value() as unknown as ParzError<string>
 
         expect(res.errors.length).toBe(2)
         expect(res.errors).toStrictEqual([`String is not length 5, it is actually of length 1`, `String is not length 5, it is actually of length 1`])
     })
 
     test("Two failed validations followed by a failed parse should result in 3 errors", () => {
-        const res = startWith<string>("a")
+        const res = startWith("a")
         .then(stringOfLength5)
         .then(stringOfLength5)
         .then(stringToInteger)
-        .value() as unknown as ValidationOrParseFail<number>
+        .value() as unknown as ParzError<number>
 
         expect(res.errors.length).toBe(3)
     })
@@ -93,7 +91,7 @@ describe("Test multiple failed validations", () => {
             .then(stringToInteger)
             .then(lessThanTen)
             .then(lessThanTen)
-            .value() as unknown as ValidationOrParseFail<number>
+            .value() as unknown as ParzError<number>
 
         expect(res.errors.length).toBe(2)
     })
@@ -103,7 +101,7 @@ describe("Test multiple failed validations", () => {
             .then(stringOfLength1)
             .then(stringToInteger)
             .then(lessThanTen)
-            .value() as unknown as ValidationOrParseFail<number>
+            .value() as unknown as ParzError<number>
 
         expect(res.errors.length).toBe(2)
     })
@@ -123,7 +121,7 @@ describe("Test parsing", () => {
     test("Simple transfrom from '1' to 1", () => {
         const res = startWith("1")
         .then(stringToInteger)
-        .value() as ValidationOrParseSuccess<string, number>
+        .value() as ParzJust<string, number>
         expect(res.target).toBe(1)
     })
 
@@ -148,7 +146,7 @@ describe("Composition", () => {
 
     const computeVolume = createParser(
         (num : typeof composite) => {
-            if (isSuccess(num.length) && isSuccess(num.width) && isSuccess(num.heigth)) {
+            if (isJust(num.length) && isJust(num.width) && isJust(num.heigth)) {
                 return num.length.target * num.width.target * num.heigth.target;
             }
             return null;
@@ -159,7 +157,7 @@ describe("Composition", () => {
     test("Check volume computation succeeds for valid input", () => {
         const res = startWith(composite)
         .then(computeVolume)
-        .value() as unknown as ValidationOrParseSuccess<typeof composite,number>
+        .value() as unknown as ParzJust<typeof composite,number>
 
         expect(res.target).toBe(1000)
     })
@@ -173,7 +171,7 @@ describe("Composition", () => {
     test("Check volume computation fails for invalid input", () => {
         const res = startWith(compositeJunk)
             .then(computeVolume)
-            .value() as unknown as ValidationOrParseFail<typeof compositeJunk>
+            .value() as unknown as ParzError<typeof compositeJunk>
     
         expect(res.errors).toStrictEqual(["Unable to compute volume"])
     })
