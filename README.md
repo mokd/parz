@@ -6,7 +6,7 @@ You can chain multiple validators and parsers with `then`. If a validator fails,
 
 ## Usage
 
-Start by creating a validator. `createValidator` expects two functions, one for validation `T -> boolean`, and one for error handling `T -> NonEmptyArray<E>`.  
+Start by creating a validator. `createValidator` expects two functions, one for validation `T -> boolean`, and one for error handling `T -> NonEmptyArray<string>`.  
 
 ```ts
 import { createValidator } from '@mokd/parz'
@@ -20,18 +20,18 @@ const stringOfLength5 = createValidator(
 Once you have a validator, you can do this:
 
 ```ts
-import { startWith, isFail, isSuccess } from '@mokd/parz'
+import { startWith, isJust } from '@mokd/parz'
 
-const validationResult = startWith<string, string>("Hello")
+const validationResult = startWith("Hello")
     .then(stringOfLength5)
     .value()
 
-if (isSuccess(validationResult)) {
+if (isJust(validationResult)) {
     console.log(validationResult.target) // target is string
 }
 ```
 
-Sometimes, we also want to parse/transform. `createParser` takes two functions, one `TOriginal -> TParsed`, and one `TOriginal -> NonEmptyArray<TError>`. To indicate parsing failure, you **must** return `null` on failure. If not, you'll have undefined behaviour.
+Sometimes, we also want to parse/transform. `createParser` takes two functions, one `TOriginal -> TParsed`, and one `TOriginal -> NonEmptyArray<string>`. To indicate parsing failure, you **must** return `null` on failure. If not, you'll have undefined behaviour.
 
 ```ts
 import { createParser } from '@mokd/parz'
@@ -68,7 +68,7 @@ const atLeastOneThousand = createValidator(
     (n) => [`${n} must be at least 1000`]
 )
 
-const fn = (oneAndZeroes : string) => startWith<string, string>(oneAndZeroes)
+const fn = (oneAndZeroes : string) => startWith(oneAndZeroes)
         .then(onesAndThenZeros)
         .then(stringToInteger)
         .then(atLeastOneThousand)
@@ -76,40 +76,32 @@ const fn = (oneAndZeroes : string) => startWith<string, string>(oneAndZeroes)
         
 const successResult = fn("10000") 
 
-if (isSuccess(successResult)) {
+if (isJust(successResult)) {
     console.log(successResult.target) // target is number
     console.log(successResult.original) // original is string
 }
 
 const failResult = fn("100")
 
-if (isSuccess(failResult)) {
+if (isJust(failResult)) {
     console.log(failResult.errors) // errors is string[], as specified in the second type parameter of startWith
     console.log(failResult.original) // original is string
 }
 ```
 
-Example for composite values:
+Example for composite values. `deflate` accepts a `Record<string, ParzRes<unknown, unknown>>`, and returns an object with `mapDeflated`, which lets you operate on the `ParzOK` target values, if and only if all values in the record evaluate to `ParzOk`. The `mapDeflated` function returns a `ParzRes`, which lets you compose additional validators and parsers.
 
 ```ts
-const composite = {
-    length : startWith("10").then(stringToInteger).value(),
-    width : startWith("10").then(stringToInteger).value(),
-    heigth : startWith("10").then(stringToInteger).value()
+
+const length = startWith("10").then(stringToInteger).value()
+const width = startWith("10").then(stringToInteger).value()
+const height = startWith("10").then(stringToInteger).value()
+
+const maybeVolume = deflate({length, width, height}).mapDeflated(x => x.length*x.width*x.height).value()
+
+if (isJust(maybeVolume)) {
+    console.log(maybeVolume.target) // value is number
 }
 
-const computeVolume = createParser(
-    (num : typeof composite) => {
-        if (isSuccess(num.length) && isSuccess(num.width) && isSuccess(num.heigth)) {
-            return num.length.target * num.width.target * num.heigth.target;
-        }
-        return null;
-    },
-    (num) => ["Unable to compute volume"]
-)
-
-const maybeVolume = startWith(composite)
-    .then(computeVolume)
-    .value()
 ```
 
