@@ -3,7 +3,8 @@
   "version": "0.0.6",
   "description": "A simple utility for parsing and validation of values.",
   "homepage": "https://github.com/mokd/parz",
-  "main": "parz.js",
+  "main": "dist/parz.js",
+  "types": "dist/parz.d.ts",
   "scripts": {
     "test:watch": "jest --watch",
     "test": "jest",
