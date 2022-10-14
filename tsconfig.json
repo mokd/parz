@@ -3,5 +3,6 @@
       "outDir": "dist",
       "strict": true,
       "declaration": true
-    }
+    },
+    "exclude": ["**/*.test.ts", "dist/"]
 }

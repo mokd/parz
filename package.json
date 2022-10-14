@@ -1,14 +1,14 @@
 {
   "name": "@mokd/parz",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A simple utility for parsing and validation of values.",
   "homepage": "https://github.com/mokd/parz",
-  "main": "dist/parz.js",
-  "types": "dist/parz.d.ts",
+  "main": "parz.js",
+  "types": "parz.d.ts",
   "scripts": {
     "test:watch": "jest --watch",
     "test": "jest",
-    "pub": "tsc && npm publish"
+    "pub": "tsc && node pack.js && cd dist && npm publish"
   },
   "author": "mokd",
   "license": "MIT",
