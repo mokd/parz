@@ -1,5 +1,5 @@
 import {describe, expect, test} from '@jest/globals';
-import { createParser, createValidator, isJust, startWith, ParzJust, ParzError } from './parz';
+import { createParser, createValidator, isJust, startWith, ParzJust, ParzError, ParzRes, deflate, isError } from './parz';
 
 describe('Test validation', () => {
 
@@ -138,41 +138,30 @@ describe("Composition", () => {
         (str) => [`${str} cannot be parsed to an integer`]
     )
 
-    const composite = {
-        length : startWith("10").then(stringToInteger).value(),
-        width : startWith("10").then(stringToInteger).value(),
-        heigth : startWith("10").then(stringToInteger).value()
-    }
-
-    const computeVolume = createParser(
-        (num : typeof composite) => {
-            if (isJust(num.length) && isJust(num.width) && isJust(num.heigth)) {
-                return num.length.target * num.width.target * num.heigth.target;
-            }
-            return null;
-        },
-        (num) => ["Unable to compute volume"]
-    )
+    const length = startWith("10").then(stringToInteger).value()
+    const width = startWith("10").then(stringToInteger).value()
+    const heigth = startWith("10").then(stringToInteger).value()
 
     test("Check volume computation succeeds for valid input", () => {
-        const res = startWith(composite)
-        .then(computeVolume)
-        .value() as unknown as ParzJust<typeof composite,number>
 
-        expect(res.target).toBe(1000)
+        const res = deflate({length, width, heigth}).mapDeflated(x => x.heigth*x.length*x.width).value()
+
+        expect(res.isJust()).toBe(true)
+        if (isJust(res)) {
+            expect(res.target).toBe(1000)
+        }
     })
 
-    const compositeJunk = {
-        length : startWith("Hello!").then(stringToInteger).value(),
-        width : startWith("yolo").then(stringToInteger).value(),
-        heigth : startWith(":-)").then(stringToInteger).value()
-    }
 
-    test("Check volume computation fails for invalid input", () => {
-        const res = startWith(compositeJunk)
-            .then(computeVolume)
-            .value() as unknown as ParzError<typeof compositeJunk>
-    
-        expect(res.errors).toStrictEqual(["Unable to compute volume"])
+    test("Check volume computation succeeds for invalid input", () => {
+
+        const invalidLength = startWith("Hello :-)").then(stringToInteger).value()
+
+        const res = deflate({invalidLength}).mapDeflated(x => x.invalidLength).value()
+
+        expect(res.isError()).toBe(true)
+        if (isError(res)) {
+            expect(res.errors).toStrictEqual(["Hello :-) cannot be parsed to an integer"])
+        }
     })
 })

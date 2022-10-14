@@ -196,3 +196,33 @@ export const createParser = <O,T>(fn : ((val : O) => T | null), errorFn: (val : 
         return invalidParse<O>(errorFn(val))
     }
 }
+
+export const deflate = <T extends Record<string, ParzRes<unknown, unknown>>>(a : T) => {
+
+    type PickTargetType<T> = T extends ParzJust<unknown,infer A> ? A : never
+    type Deflate<K> = {
+        [P in keyof K]: PickTargetType<K[P]>
+    }
+
+    const entries = Object.entries(a as any);
+    const filterValid = entries.filter(([k,v] : [string, any]) => v?.isJust() ?? false)
+
+    const tryDeflate = createParser(
+        (val : any) => {
+            if (entries.length === filterValid.length) {
+                return Object.fromEntries(entries.map(([k,v] : [string, any]) => [k, v.target])) as Deflate<T>
+            }
+            return null
+        },
+        (val) => entries
+            .filter(([k,v] : [string, any]) => v.isError())
+            .flatMap(([k,v] : [string, any]) => v.errors) as NonEmptyArray<string>
+    )
+
+    return {
+        mapDeflated: <T1>(fn : (val : Deflate<T>) => T1) => startWith(a).then(tryDeflate).then(createParser(
+            fn,
+            () => [] as unknown as NonEmptyArray<string>
+        ))
+    } 
+}
