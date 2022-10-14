@@ -9,7 +9,7 @@ describe('Test validation', () => {
     )
 
     test("Simple validation success", () => {
-        const res = startWith<string, string>("12345")
+        const res = startWith<string>("12345")
             .then(stringOfLength5)
             .value()
 
@@ -18,14 +18,14 @@ describe('Test validation', () => {
     })
 
     test("Simple validation fail", () => {
-        const res = startWith<string, string>("1")
+        const res = startWith<string>("1")
             .then(stringOfLength5)
             .value()
 
         const checked = isFail(res)
         expect(checked).toBe(true)
 
-        const value = res as unknown as ValidationOrParseFail<string, string>
+        const value = res as unknown as ValidationOrParseFail<string>
 
         expect(value.errors).toStrictEqual([`String is not length 5, it is actually of length 1`])
     })
@@ -58,32 +58,32 @@ describe("Test multiple failed validations", () => {
         )
 
     test("Two failed validations should result in two errors", () => {
-        const res = startWith<string, string>("1")
+        const res = startWith<string>("1")
         .then(stringOfLength5)
         .then(stringOfLength5)
-        .value() as unknown as ValidationOrParseFail<string, string>
+        .value() as unknown as ValidationOrParseFail<string>
 
         expect(res.errors.length).toBe(2)
         expect(res.errors).toStrictEqual([`String is not length 5, it is actually of length 1`, `String is not length 5, it is actually of length 1`])
     })
 
     test("Two failed validations followed by a successful one should result in two errors", () => {
-        const res = startWith<string, string>("1")
+        const res = startWith("1")
         .then(stringOfLength5)
         .then(stringOfLength5)
         .then(stringOfLength1)
-        .value() as unknown as ValidationOrParseFail<string, string>
+        .value() as unknown as ValidationOrParseFail<string>
 
         expect(res.errors.length).toBe(2)
         expect(res.errors).toStrictEqual([`String is not length 5, it is actually of length 1`, `String is not length 5, it is actually of length 1`])
     })
 
     test("Two failed validations followed by a failed parse should result in 3 errors", () => {
-        const res = startWith<string, string>("a")
+        const res = startWith<string>("a")
         .then(stringOfLength5)
         .then(stringOfLength5)
         .then(stringToInteger)
-        .value() as unknown as ValidationOrParseFail<number, string>
+        .value() as unknown as ValidationOrParseFail<number>
 
         expect(res.errors.length).toBe(3)
     })
@@ -93,7 +93,7 @@ describe("Test multiple failed validations", () => {
             .then(stringToInteger)
             .then(lessThanTen)
             .then(lessThanTen)
-            .value() as unknown as ValidationOrParseFail<number, string>
+            .value() as unknown as ValidationOrParseFail<number>
 
         expect(res.errors.length).toBe(2)
     })
@@ -103,7 +103,7 @@ describe("Test multiple failed validations", () => {
             .then(stringOfLength1)
             .then(stringToInteger)
             .then(lessThanTen)
-            .value() as unknown as ValidationOrParseFail<number, string>
+            .value() as unknown as ValidationOrParseFail<number>
 
         expect(res.errors.length).toBe(2)
     })
@@ -173,29 +173,8 @@ describe("Composition", () => {
     test("Check volume computation fails for invalid input", () => {
         const res = startWith(compositeJunk)
             .then(computeVolume)
-            .value() as unknown as ValidationOrParseFail<typeof compositeJunk, string>
+            .value() as unknown as ValidationOrParseFail<typeof compositeJunk>
     
         expect(res.errors).toStrictEqual(["Unable to compute volume"])
-    })
-})
-
-describe("Custom error type", () => {
-
-    const error = (num : number) => Object.assign({}, { mustBeValid : true, isValid: false, msg : `Number is ten or greater. Actual: ${num}`});
-
-    const lessThanTen = createValidator(
-        (number : number) => number < 10,
-        (number) => [error(number)]
-    )
-
-    test("Returns custom type on failure", () => {
-        const res = startWith<number, ReturnType<typeof error>>(11)
-        .then(lessThanTen)
-        .value()
-
-        expect(isFail(res)).toBe(true)
-        if (isFail(res)) {
-            expect(res.errors).toStrictEqual([error(11)])
-        }
     })
 })
